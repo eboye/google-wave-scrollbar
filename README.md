@@ -15,6 +15,10 @@ entirely by CSS.
 
 ### [▶ Live demo →](https://eboye.github.io/google-wave-scrollbar/)
 
+<br />
+
+[![wave-scroll demo](docs/screenshot.png)](https://eboye.github.io/google-wave-scrollbar/)
+
 </div>
 
 ---
