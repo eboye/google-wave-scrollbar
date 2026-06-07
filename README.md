@@ -13,6 +13,8 @@ entirely by CSS.
 [![ES Module](https://img.shields.io/badge/ESM-native-f4f4ff?style=flat-square&labelColor=14142b)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#license)
 
+### [▶ Live demo →](https://eboye.github.io/google-wave-scrollbar/)
+
 </div>
 
 ---
@@ -112,7 +114,9 @@ wave-scroll::part(track)   { background: #fff2; }
 
 ## ✦ Demo
 
-Serve the folder over HTTP and open `index.html`:
+**Live:** [eboye.github.io/google-wave-scrollbar](https://eboye.github.io/google-wave-scrollbar/)
+
+Or run it locally — serve the folder over HTTP and open `index.html`:
 
 ```sh
 python3 -m http.server
