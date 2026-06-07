@@ -19,6 +19,11 @@ export declare class WaveScroll extends HTMLElement {
    * Elements with `data-wave-section` are always included.
    */
   sections: string | boolean | null;
+  /**
+   * Emit a tiny Vibration-API tick when scrolling crosses into a new section
+   * (mirrors the `haptics` attribute). Requires `sections`.
+   */
+  haptics: boolean;
 }
 
 /** Convenience alias for the element instance type. */

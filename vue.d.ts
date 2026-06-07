@@ -12,6 +12,8 @@ export interface WaveScrollProps {
    * CSS selector. Elements with `data-wave-section` are always included.
    */
   sections?: boolean | string;
+  /** Emit a haptic tick when crossing into a new section. Requires `sections`. */
+  haptics?: boolean;
 }
 
 /** Vue 3 component wrapping the `<wave-scroll>` custom element. */

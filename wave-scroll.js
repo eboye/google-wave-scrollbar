@@ -21,6 +21,12 @@
  *   accent="#rrggbb"   theme color (also: --wave-accent CSS custom property)
  *   auto-hide          only reveal the bar on hover / interaction
  *   no-arrows          hide the up/down arrow buttons
+ *   sections[="sel"]   show jump-to pills for elements matching the selector
+ *                      (default "h2") plus any [data-wave-section] markers;
+ *                      the arrows then step between sections, and jumps respect
+ *                      scroll-margin / scroll-padding
+ *   haptics            with sections, emit a tiny Vibration-API tick when
+ *                      scrolling crosses into a new section
  *
  * @author  rebuilt 2026
  * @license MIT
@@ -78,6 +84,7 @@ const STYLES = /* css */ `
   .bar[hidden] { display: none; }
   :host([auto-hide]) .bar { opacity: 0; }
   :host([auto-hide]:hover) .bar,
+  :host([auto-hide]:focus-within) .bar,
   :host([auto-hide][data-active]) .bar { opacity: 1; }
 
   /* Soft inset track so the bar reads as an overlay, not a gutter. */
@@ -90,6 +97,7 @@ const STYLES = /* css */ `
     transition: opacity var(--wave-fade) ease;
   }
   :host(:hover) .track,
+  :host(:focus-within) .track,
   :host([data-active]) .track { opacity: 1; }
 
   /* The grabber: glassy, springy, follows scroll via the CSS timeline. */
@@ -163,6 +171,7 @@ const STYLES = /* css */ `
                 background var(--wave-fade) ease;
   }
   :host(:hover) .pill,
+  :host(:focus-within) .pill,
   :host([data-active]) .pill { opacity: 1; }
   .pill:hover, .pill:focus-visible { scale: 1.6; outline: none; }
   .pill.active {
@@ -212,6 +221,7 @@ const STYLES = /* css */ `
   .arrow.up { inset-block-start: 2px; }
   .arrow.down { inset-block-end: 2px; }
   :host(:hover) .grabber .arrow,
+  :host(:focus-within) .grabber .arrow,
   :host([data-active]) .grabber .arrow { opacity: 1; }
   .arrow:hover { color: #fff; }
   :host([no-arrows]) .arrow { display: none; }
@@ -244,6 +254,10 @@ class WaveScroll extends HTMLElement {
   #frozen = false;
   #goal = 0; // last requested scrollTop (for accumulating arrow steps)
   #sections = []; // [{ el, pill, top }] when the `sections` feature is on
+  #activeIndex = -1; // index of the in-view section pill (for haptics + .active)
+  #releaseAnim = null; // in-flight "glide back" animation, if any
+  #hovering = false; // pointer is over the bar (keeps the dragger "delayed")
+  #autoReleaseTimer = 0; // fallback release for keyboard / programmatic steps
 
   // Properties that reflect attributes, so frameworks (React/Vue) and plain JS
   // can bind to `el.accent`, `el.autoHide`, `el.noArrows` directly.
@@ -269,16 +283,25 @@ class WaveScroll extends HTMLElement {
     else this.setAttribute('sections', value === true ? '' : String(value));
   }
 
+  /**
+   * Emit a tiny haptic tick (via the Vibration API, where supported) each time
+   * scrolling crosses into a new section. Requires `sections`; no-op elsewhere.
+   */
+  get haptics() { return this.hasAttribute('haptics'); }
+  set haptics(value) { this.toggleAttribute('haptics', Boolean(value)); }
+
   connectedCallback() {
-    if (!this.shadowRoot) this.#render();
+    if (!this.shadowRoot) this.#render(); // builds DOM + attaches listeners once
+    REDUCED_MOTION.addEventListener?.('change', this.#update);
+    this.#observe();
     this.#applyAccent();
-    this.#wire();
     this.#update();
     this.#collectSections();
   }
 
   disconnectedCallback() {
     this.#resizeObserver?.disconnect();
+    clearTimeout(this.#autoReleaseTimer);
     REDUCED_MOTION.removeEventListener?.('change', this.#update);
   }
 
@@ -314,30 +337,20 @@ class WaveScroll extends HTMLElement {
 
     // Fallback path: drive the grabber from JS when CSS timelines are absent.
     if (!NATIVE_TIMELINE) this.#grabber.classList.add('frozen');
-  }
 
-  #applyAccent() {
-    const accent = this.getAttribute('accent');
-    if (accent) this.style.setProperty('--wave-accent', accent);
-  }
-
-  #wire() {
-    // Keep dimensions fresh: viewport resize + slotted content growth.
+    // Listeners that live for the element's lifetime — attached exactly once,
+    // so moving the element in the DOM never double-binds them.
     this.#resizeObserver = new ResizeObserver(() => this.#update());
-    this.#resizeObserver.observe(this.#viewport);
     this.#slot.addEventListener('slotchange', () => {
-      for (const el of this.#slot.assignedElements()) this.#resizeObserver.observe(el);
+      this.#observe(); // re-arm on the new set of slotted children
       this.#update();
       this.#collectSections(); // content changed → rediscover sections
     });
-
-    // Track the "goal" so arrow steps accumulate, and (in fallback mode) move
-    // the grabber to match the live scroll position.
+    // Tracks the scroll "goal" (so arrow steps accumulate) and, in fallback
+    // mode, moves the grabber to match the live scroll position.
     this.#viewport.addEventListener('scroll', this.#onScroll, { passive: true });
-
     // Drag the grabber to scroll.
     this.#grabber.addEventListener('pointerdown', this.#onGrabberDown);
-
     // Arrow click = the delayed-dragger step scroll.
     for (const arrow of this.#grabber.querySelectorAll('.arrow')) {
       arrow.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -345,11 +358,27 @@ class WaveScroll extends HTMLElement {
         this.#stepScroll(arrow.classList.contains('up') ? -1 : 1),
       );
     }
+    // Track hovering so the dragger stays "delayed" under the pointer, and
+    // release once the pointer leaves the bar region.
+    this.#bar.addEventListener('pointerenter', () => { this.#hovering = true; });
+    this.#bar.addEventListener('pointerleave', () => {
+      this.#hovering = false;
+      this.#release();
+    });
+  }
 
-    // Releasing the delayed dragger when the pointer leaves the bar.
-    this.#bar.addEventListener('pointerleave', () => this.#release());
+  #applyAccent() {
+    const accent = this.getAttribute('accent');
+    if (accent) this.style.setProperty('--wave-accent', accent);
+    else this.style.removeProperty('--wave-accent'); // restore the default
+  }
 
-    REDUCED_MOTION.addEventListener?.('change', this.#update);
+  // Watch the viewport and its slotted children for size changes. Safe to call
+  // repeatedly — it resets the observer each time (used on connect & slotchange).
+  #observe() {
+    this.#resizeObserver.disconnect();
+    this.#resizeObserver.observe(this.#viewport);
+    for (const el of this.#slot.assignedElements()) this.#resizeObserver.observe(el);
   }
 
   // --- geometry -------------------------------------------------------------
@@ -400,6 +429,7 @@ class WaveScroll extends HTMLElement {
     if (!this.#pills) return;
     this.#pills.replaceChildren();
     this.#sections = [];
+    this.#activeIndex = -1;
     if (!this.hasAttribute('sections')) return;
 
     const selector = (this.getAttribute('sections') || '').trim() || 'h2';
@@ -417,7 +447,9 @@ class WaveScroll extends HTMLElement {
 
     for (const el of els) {
       const label =
-        (el.getAttribute('data-wave-section') || el.textContent || '').trim() || 'Section';
+        (el.getAttribute('data-wave-section') || el.textContent || '')
+          .replace(/\s+/g, ' ')
+          .trim() || 'Section';
       const pill = document.createElement('button');
       pill.type = 'button';
       pill.className = 'pill';
@@ -443,8 +475,14 @@ class WaveScroll extends HTMLElement {
     if (!this.#sections.length) return;
     const vpTop = this.#viewport.getBoundingClientRect().top;
     const scrollTop = this.#viewport.scrollTop;
+    // Respect scroll-padding on the scroller and scroll-margin on each section,
+    // so a jump lands where the author intends (e.g. clear of a sticky header)
+    // — and the dot stays aligned with the grabber afterwards.
+    const padTop = parseFloat(getComputedStyle(this.#viewport).scrollPaddingTop) || 0;
     for (const s of this.#sections) {
-      s.top = s.el.getBoundingClientRect().top - vpTop + scrollTop;
+      const raw = s.el.getBoundingClientRect().top - vpTop + scrollTop;
+      const marginTop = parseFloat(getComputedStyle(s.el).scrollMarginTop) || 0;
+      s.top = Math.max(0, raw - marginTop - padTop);
     }
     this.#sections.sort((a, b) => a.top - b.top);
 
@@ -460,7 +498,8 @@ class WaveScroll extends HTMLElement {
     this.#updateActiveSection();
   }
 
-  // Highlight the pill for the section currently in view.
+  // Highlight the pill for the section currently in view, and emit a haptic
+  // tick when scrolling crosses into a new one.
   #updateActiveSection() {
     if (!this.#sections.length) return;
     const y = this.#viewport.scrollTop + this.#viewport.clientHeight * 0.25;
@@ -469,6 +508,13 @@ class WaveScroll extends HTMLElement {
       if (this.#sections[i].top <= y) active = i;
       else break;
     }
+    if (active === this.#activeIndex) return;
+
+    // Tick only on an actual crossing (not the first assignment on load).
+    if (this.#activeIndex !== -1 && this.hasAttribute('haptics')) {
+      navigator.vibrate?.(8);
+    }
+    this.#activeIndex = active;
     this.#sections.forEach((s, i) => s.pill.classList.toggle('active', i === active));
   }
 
@@ -501,18 +547,26 @@ class WaveScroll extends HTMLElement {
       this.#grabber.releasePointerCapture?.(ev.pointerId);
       this.#grabber.removeEventListener('pointermove', onMove);
       this.#grabber.removeEventListener('pointerup', onUp);
+      this.#grabber.removeEventListener('pointercancel', onUp);
       this.removeAttribute('data-active');
       this.#indicator.classList.remove('show');
     };
     this.#grabber.addEventListener('pointermove', onMove);
     this.#grabber.addEventListener('pointerup', onUp);
+    this.#grabber.addEventListener('pointercancel', onUp); // interrupted gesture
   };
 
   // --- arrow step + delayed dragger -----------------------------------------
 
   #stepScroll(direction) {
-    const step = Math.max(120, this.#viewport.clientHeight * 0.4);
-    this.#goal = Math.min(this.#scrollable, Math.max(0, this.#goal + direction * step));
+    // With sections on, arrows step to the previous/next section; otherwise
+    // they scroll by a fixed fraction of the viewport (the original Wave step).
+    this.#goal = this.#sections.length
+      ? this.#sectionStepTarget(direction)
+      : Math.min(
+          this.#scrollable,
+          Math.max(0, this.#goal + direction * Math.max(120, this.#viewport.clientHeight * 0.4)),
+        );
 
     this.#freeze();
     this.#indicator.classList.add('show');
@@ -522,15 +576,46 @@ class WaveScroll extends HTMLElement {
       top: this.#goal,
       behavior: REDUCED_MOTION.matches ? 'auto' : 'smooth',
     });
+    this.#scheduleAutoRelease();
+  }
+
+  // The delayed dragger normally releases on pointerleave. For keyboard or
+  // programmatic activation (no pointer), release once the scroll settles —
+  // unless the pointer is genuinely hovering, where pointerleave still rules.
+  #scheduleAutoRelease() {
+    clearTimeout(this.#autoReleaseTimer);
+    const done = () => {
+      clearTimeout(this.#autoReleaseTimer);
+      this.#viewport.removeEventListener('scrollend', done);
+      if (!this.#hovering) this.#release();
+    };
+    this.#viewport.addEventListener('scrollend', done, { once: true });
+    this.#autoReleaseTimer = setTimeout(done, 700); // fallback if no scrollend
+  }
+
+  // Scroll target for the previous (-1) or next (+1) section relative to the
+  // current goal. Past the ends, snaps to the very top / bottom.
+  #sectionStepTarget(direction) {
+    const cur = this.#goal;
+    if (direction > 0) {
+      const next = this.#sections.find((s) => s.top > cur + 1);
+      return next ? next.top : this.#scrollable;
+    }
+    let prev = 0;
+    for (const s of this.#sections) {
+      if (s.top < cur - 1) prev = s.top;
+      else break;
+    }
+    return prev;
   }
 
   // Hold the grabber in place while the content scrolls underneath it.
   #freeze() {
-    if (this.#frozen && NATIVE_TIMELINE) return;
+    this.#releaseAnim?.cancel(); // abandon any in-flight glide-back
+    this.#releaseAnim = null;
     this.#frozen = true;
     if (NATIVE_TIMELINE) {
-      const held = this.#currentY();
-      this.#grabber.style.transform = `translateY(${held}px)`;
+      this.#grabber.style.transform = `translateY(${this.#currentY()}px)`;
       this.#grabber.classList.add('frozen');
     }
     // In fallback mode .frozen is already set; #paintThumb skips the grabber.
@@ -569,19 +654,25 @@ class WaveScroll extends HTMLElement {
       [{ transform: `translateY(${from}px)` }, { transform: `translateY(${to}px)` }],
       { duration: 280, easing: 'cubic-bezier(.2,.85,.25,1)', fill: 'forwards' },
     );
+    this.#releaseAnim = anim;
     anim.onfinish = () => {
       anim.cancel();
+      this.#releaseAnim = null;
       settle();
     };
   }
 
   // Current grabber Y, whether driven by the CSS timeline or by JS.
   #currentY() {
-    const m = new DOMMatrixReadOnly(getComputedStyle(this.#grabber).transform);
-    return m.m42; // translateY
+    const t = getComputedStyle(this.#grabber).transform;
+    return t && t !== 'none' ? new DOMMatrixReadOnly(t).m42 : 0; // m42 = translateY
   }
 }
 
-customElements.define('wave-scroll', WaveScroll);
+// Guard against double-registration (e.g. the module loaded via two URLs, or a
+// CDN copy alongside a bundled one), which would otherwise throw.
+if (!customElements.get('wave-scroll')) {
+  customElements.define('wave-scroll', WaveScroll);
+}
 
 export { WaveScroll };

@@ -18,6 +18,8 @@ export interface WaveScrollProps {
    * CSS selector. Elements with `data-wave-section` are always included.
    */
   sections?: boolean | string;
+  /** Emit a haptic tick when crossing into a new section. Requires `sections`. */
+  haptics?: boolean;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;

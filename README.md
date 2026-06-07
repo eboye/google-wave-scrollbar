@@ -105,6 +105,7 @@ That's the whole API.
 | `auto-hide` | Only reveal the bar on hover / interaction. |
 | `no-arrows` | Hide the up/down step buttons for a cleaner, minimal bar. |
 | `sections` | Show jump-to **section pills** along the track. Boolean (default `h2`) or a CSS selector — see below. |
+| `haptics` | With `sections`, emit a tiny [Vibration-API](https://developer.mozilla.org/docs/Web/API/Navigator/vibrate) tick when scrolling crosses into a new section (where supported, e.g. Android). |
 
 ### Section pills
 
@@ -122,6 +123,12 @@ section, positioned exactly where the grabber lands for that section:
 - **Click a pill** to smooth-scroll to that section.
 - **Hover** a pill to see its label (the element's text) in a tooltip.
 - The pill for the section **currently in view** highlights as you scroll.
+- The **up/down arrows step between sections** (previous / next) when `sections`
+  is on, instead of a fixed pixel step.
+- Jumps respect **`scroll-margin-top`** (on the section) and **`scroll-padding-top`**
+  (on the scroller), so targets clear sticky headers.
+- Add **`haptics`** for a subtle vibration tick as you cross sections (supported
+  devices only).
 - Elements marked `data-wave-section="Label"` are **always** included (on top of
   the selector), with the attribute value as the label:
 
@@ -172,7 +179,7 @@ export function App() {
 }
 ```
 
-Props: `accent`, `autoHide`, `noArrows`, `sections`, plus `className` / `style` / `ref`.
+Props: `accent`, `autoHide`, `noArrows`, `sections`, `haptics`, plus `className` / `style` / `ref`.
 
 > Since it's a real custom element, you can also skip the wrapper and write
 > `<wave-scroll>` directly after `import 'wave-scroll'` — React 19 passes
