@@ -10,6 +10,7 @@ entirely by CSS.
 
 [![Web Component](https://img.shields.io/badge/web-component-7c6cff?style=flat-square)](https://developer.mozilla.org/docs/Web/API/Web_components)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-00d9c0?style=flat-square)](#)
+[![Size](https://img.shields.io/badge/core-7.8_kB_gzip-00d9c0?style=flat-square)](#-size)
 [![ES Module](https://img.shields.io/badge/ESM-native-f4f4ff?style=flat-square&labelColor=14142b)](#)
 [![React & Vue](https://img.shields.io/badge/React%20%26%20Vue-ready-42b883?style=flat-square&labelColor=61dafb)](#-react)
 [![TypeScript](https://img.shields.io/badge/types-included-3178c6?style=flat-square)](#)
@@ -49,8 +50,9 @@ no jQuery, no jQuery UI, no sprite PNGs.
 |---|---|
 | 🪶 **Native by default** | Content scrolls in a real overflow container — keyboard, touch, momentum, and find-in-page all keep working. The native bar is hidden; a custom overlay is painted on top. |
 | 🎞️ **CSS-first motion** | The resting grabber position rides a CSS `scroll-timeline`, so wheel / trackpad / keyboard scrolling costs **zero JavaScript per frame**. |
-| 〰️ **Faithful behavior** | JS powers only the three Wave signatures: drag-to-scrub, arrow step-scroll, and the *delayed dragger* (the grabber lingers while a thin indicator shows where you're heading, then glides over once the pointer leaves). |
-| 🌗 **Considerate** | Honours `prefers-color-scheme` and `prefers-reduced-motion`, encapsulated in Shadow DOM, themeable, and degrades gracefully where scroll-driven animations aren't supported. |
+| 〰️ **Faithful behavior** | JS powers only the Wave signatures: drag-to-scrub, arrow step-scroll, and the *delayed dragger* (the grabber lingers while a thin indicator shows where you're heading, then glides over once the pointer leaves). |
+| 📍 **Section pills** | Opt in with `sections` to scatter clickable jump-to-section dots along the track; the arrows then step section to section, jumps respect `scroll-margin`, and `haptics` adds a vibration tick on crossings. |
+| 🌗 **Considerate** | Honours `prefers-color-scheme` and `prefers-reduced-motion`, keyboard-operable, encapsulated in Shadow DOM, themeable, and degrades gracefully where scroll-driven animations aren't supported. |
 
 ---
 
@@ -242,6 +244,20 @@ The grabber's `translateY` is keyed to a CSS `scroll-timeline`, so the browser
 moves it on the compositor as you scroll — no per-frame JavaScript. JS steps in
 only for drag, arrow clicks, and the delayed-dragger reveal, then hands control
 straight back to the timeline with no visual snap.
+
+---
+
+## ✦ Size
+
+The whole thing is one dependency-free file — no runtime, no build needed.
+
+| File | Raw | Gzipped |
+|------|-----|---------|
+| `wave-scroll.js` (everything: element + styles) | 24.6 kB | **7.8 kB** |
+
+The React (`react.js`) and Vue (`vue.js`) wrappers are ~1 kB each and pull in no
+extra dependencies — they re-export the same core element. The published npm
+tarball is ~13 kB and includes the wrappers and TypeScript types.
 
 ---
 

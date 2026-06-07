@@ -182,9 +182,9 @@
       </p>
       <div class="meta">
         <span>0 dependencies</span>
-        <span>~6&nbsp;kB</span>
+        <span>7.8&nbsp;kB gzipped</span>
         <span>CSS scroll-driven</span>
-        <span>Shadow DOM</span>
+        <span>React &amp; Vue</span>
       </div>
     </section>
 
@@ -195,9 +195,9 @@
           <p class="lead">
             Scroll with your wheel or trackpad and the grabber tracks you on the
             compositor. <b>Drag</b> the grabber to scrub. <b>Click the arrows</b>
-            and watch the delayed dragger: the grabber lingers while a thin
-            indicator shows where you're headed, then glides over once your
-            pointer leaves.
+            to step between sections and watch the delayed dragger: the grabber
+            lingers while a thin indicator shows where you're headed, then glides
+            over once your pointer leaves.
           </p>
 
           <div class="feature">
@@ -214,9 +214,18 @@
             delayed-dragger reveal.</span>
           </div>
           <div class="feature">
+            <b>Section pills</b>
+            <span>See the dots on the track? This panel uses
+            <code>sections="h2"</code>. Each <code>&lt;h2&gt;</code> gets a pill at
+            its exact spot — click to jump, hover for its label, and the arrows
+            step section to section. Jumps respect <code>scroll-margin</code>, and
+            with <code>haptics</code> a tiny vibration ticks as you cross each one
+            (on supporting devices).</span>
+          </div>
+          <div class="feature">
             <b>Considerate</b>
             <span>Honours <code>prefers-color-scheme</code> and
-            <code>prefers-reduced-motion</code>, themeable via
+            <code>prefers-reduced-motion</code>, keyboard-operable, themeable via
             <code>--wave-accent</code>, and degrades gracefully where scroll-driven
             animations aren't supported.</span>
           </div>
@@ -228,8 +237,9 @@
           <p><code>&lt;wave-scroll accent="#7c6cff"&gt; … &lt;/wave-scroll&gt;</code></p>
           <p>
             Optional attributes: <code>auto-hide</code> reveals the bar only on
-            interaction, and <code>no-arrows</code> drops the step buttons for a
-            cleaner minimal bar.
+            interaction, <code>no-arrows</code> drops the step buttons,
+            <code>sections="h2"</code> adds the jump pills, and
+            <code>haptics</code> ticks as you cross sections.
           </p>
 
           <div class="example">
