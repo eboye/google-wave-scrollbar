@@ -1,0 +1,62 @@
+{
+  "name": "@eboye/wave-scroll",
+  "version": "1.0.0",
+  "description": "The Google Wave scrollbar, rebuilt for 2026: a zero-dependency Web Component with native scrolling, a glassy overlay grabber, and CSS scroll-driven motion. React & Vue wrappers included.",
+  "type": "module",
+  "main": "./wave-scroll.js",
+  "module": "./wave-scroll.js",
+  "types": "./wave-scroll.d.ts",
+  "exports": {
+    ".": {
+      "types": "./wave-scroll.d.ts",
+      "default": "./wave-scroll.js"
+    },
+    "./react": {
+      "types": "./react.d.ts",
+      "default": "./react.js"
+    },
+    "./vue": {
+      "types": "./vue.d.ts",
+      "default": "./vue.js"
+    }
+  },
+  "files": [
+    "wave-scroll.js",
+    "wave-scroll.d.ts",
+    "react.js",
+    "react.d.ts",
+    "vue.js",
+    "vue.d.ts"
+  ],
+  "sideEffects": [
+    "./wave-scroll.js",
+    "./react.js",
+    "./vue.js"
+  ],
+  "keywords": [
+    "scrollbar",
+    "web-component",
+    "custom-element",
+    "google-wave",
+    "scroll",
+    "react",
+    "vue",
+    "scroll-driven-animations"
+  ],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18",
+    "vue": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-dom": { "optional": true },
+    "vue": { "optional": true }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eboye/google-wave-scrollbar.git"
+  },
+  "homepage": "https://eboye.github.io/google-wave-scrollbar/",
+  "license": "MIT"
+}

@@ -11,6 +11,8 @@ entirely by CSS.
 [![Web Component](https://img.shields.io/badge/web-component-7c6cff?style=flat-square)](https://developer.mozilla.org/docs/Web/API/Web_components)
 [![Zero dependencies](https://img.shields.io/badge/dependencies-0-00d9c0?style=flat-square)](#)
 [![ES Module](https://img.shields.io/badge/ESM-native-f4f4ff?style=flat-square&labelColor=14142b)](#)
+[![React & Vue](https://img.shields.io/badge/React%20%26%20Vue-ready-42b883?style=flat-square&labelColor=61dafb)](#-react)
+[![TypeScript](https://img.shields.io/badge/types-included-3178c6?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#license)
 
 ### [▶ Live demo →](https://eboye.github.io/google-wave-scrollbar/)
@@ -54,10 +56,20 @@ no jQuery, no jQuery UI, no sprite PNGs.
 
 ## ✦ Install
 
-No build step. Just drop in the module:
+**Plain HTML** — no build step, just drop in the module:
 
 ```html
 <script type="module" src="wave-scroll.js"></script>
+```
+
+**Or via npm** (ships with TypeScript types and React / Vue wrappers):
+
+```sh
+npm install @eboye/wave-scroll
+```
+
+```js
+import '@eboye/wave-scroll';        // registers the <wave-scroll> element
 ```
 
 ---
@@ -113,6 +125,53 @@ You can also style the internals via `::part()`:
 wave-scroll::part(grabber) { box-shadow: 0 2px 12px #0008; }
 wave-scroll::part(track)   { background: #fff2; }
 ```
+
+---
+
+## ✦ React
+
+A thin, typed wrapper forwards a ref to the element and maps camelCase props to
+attributes:
+
+```jsx
+import { WaveScroll } from '@eboye/wave-scroll/react';
+
+export function App() {
+  return (
+    <WaveScroll accent="#7c6cff" autoHide style={{ height: '100%' }}>
+      <article>…your long content…</article>
+    </WaveScroll>
+  );
+}
+```
+
+Props: `accent`, `autoHide`, `noArrows`, plus `className` / `style` / `ref`.
+
+> Since it's a real custom element, you can also skip the wrapper and write
+> `<wave-scroll>` directly after `import '@eboye/wave-scroll'` — React 19 passes
+> props through cleanly.
+
+## ✦ Vue
+
+```vue
+<script setup>
+import { WaveScroll } from '@eboye/wave-scroll/vue';
+</script>
+
+<template>
+  <WaveScroll accent="#7c6cff" auto-hide style="height: 100%">
+    <article>…your long content…</article>
+  </WaveScroll>
+</template>
+```
+
+> Prefer the raw tag in a template? Import `'@eboye/wave-scroll'` and tell Vue
+> it's a custom element so it doesn't try to resolve it as a component:
+>
+> ```js
+> // vite.config.js
+> vue({ template: { compilerOptions: { isCustomElement: (t) => t === 'wave-scroll' } } })
+> ```
 
 ---
 

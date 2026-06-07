@@ -193,6 +193,19 @@ class WaveScroll extends HTMLElement {
   #frozen = false;
   #goal = 0; // last requested scrollTop (for accumulating arrow steps)
 
+  // Properties that reflect attributes, so frameworks (React/Vue) and plain JS
+  // can bind to `el.accent`, `el.autoHide`, `el.noArrows` directly.
+  get accent() { return this.getAttribute('accent'); }
+  set accent(value) {
+    value == null ? this.removeAttribute('accent') : this.setAttribute('accent', value);
+  }
+
+  get autoHide() { return this.hasAttribute('auto-hide'); }
+  set autoHide(value) { this.toggleAttribute('auto-hide', Boolean(value)); }
+
+  get noArrows() { return this.hasAttribute('no-arrows'); }
+  set noArrows(value) { this.toggleAttribute('no-arrows', Boolean(value)); }
+
   connectedCallback() {
     if (!this.shadowRoot) this.#render();
     this.#applyAccent();
