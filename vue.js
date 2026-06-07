@@ -21,6 +21,7 @@ export const WaveScroll = defineComponent({
     accent: { type: String, default: undefined },
     autoHide: { type: Boolean, default: false },
     noArrows: { type: Boolean, default: false },
+    sections: { type: [Boolean, String], default: false },
   },
   setup(props, { slots, attrs }) {
     return () =>
@@ -32,6 +33,8 @@ export const WaveScroll = defineComponent({
           // Presence attributes: empty string = present, null = absent.
           'auto-hide': props.autoHide ? '' : null,
           'no-arrows': props.noArrows ? '' : null,
+          // `sections`: true → default selector (''), string → custom selector.
+          sections: props.sections === true ? '' : props.sections || null,
         },
         slots.default ? slots.default() : undefined,
       );

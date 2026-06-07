@@ -13,6 +13,12 @@ export declare class WaveScroll extends HTMLElement {
   autoHide: boolean;
   /** Hide the up/down step buttons (mirrors the `no-arrows` attribute). */
   noArrows: boolean;
+  /**
+   * Section pills (mirrors the `sections` attribute). `true` uses the default
+   * `h2` selector, a string is used as a CSS selector, `false`/`null` is off.
+   * Elements with `data-wave-section` are always included.
+   */
+  sections: string | boolean | null;
 }
 
 /** Convenience alias for the element instance type. */

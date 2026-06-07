@@ -141,6 +141,56 @@ const STYLES = /* css */ `
   }
   .indicator.show { opacity: .9; }
 
+  /* Section pills: jump targets along the track (opt-in via the sections
+     attribute). They sit behind the grabber, which stays on top for dragging. */
+  .pills { position: absolute; inset: 0; pointer-events: none; }
+  .pill {
+    position: absolute;
+    inset-inline: 0;
+    margin-inline: auto;
+    inline-size: 6px;
+    block-size: 6px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 45%, transparent);
+    cursor: pointer;
+    pointer-events: auto;
+    opacity: .5;
+    translate: 0 -50%;            /* center the dot on its computed offset */
+    transition: opacity var(--wave-fade) ease,
+                scale var(--wave-fade) var(--wave-ease),
+                background var(--wave-fade) ease;
+  }
+  :host(:hover) .pill,
+  :host([data-active]) .pill { opacity: 1; }
+  .pill:hover, .pill:focus-visible { scale: 1.6; outline: none; }
+  .pill.active {
+    background: var(--wave-accent);
+    box-shadow: 0 0 8px var(--wave-accent);
+    opacity: 1;
+    scale: 1.3;
+  }
+  .pill .tip {
+    position: absolute;
+    inset-inline-end: calc(100% + 8px);
+    inset-block-start: 50%;
+    translate: 0 -50%;
+    max-inline-size: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: .2rem .5rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, .82);
+    color: #fff;
+    font: 500 .72rem/1.3 system-ui, sans-serif;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease;
+  }
+  .pill:hover .tip, .pill:focus-visible .tip { opacity: 1; }
+
   /* Arrow buttons live inside the grabber, like the original Wave bar. */
   .arrow {
     position: absolute;
@@ -167,7 +217,7 @@ const STYLES = /* css */ `
   :host([no-arrows]) .arrow { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
-    .grabber, .indicator, .track, .bar, .arrow { transition: none; }
+    .grabber, .indicator, .track, .bar, .arrow, .pill, .tip { transition: none; }
   }
 `;
 
@@ -182,16 +232,18 @@ const ARROW = (dir) => /* html */ `
   </button>`;
 
 class WaveScroll extends HTMLElement {
-  static observedAttributes = ['accent'];
+  static observedAttributes = ['accent', 'sections'];
 
   #viewport;
   #bar;
   #grabber;
   #indicator;
+  #pills;
   #slot;
   #resizeObserver;
   #frozen = false;
   #goal = 0; // last requested scrollTop (for accumulating arrow steps)
+  #sections = []; // [{ el, pill, top }] when the `sections` feature is on
 
   // Properties that reflect attributes, so frameworks (React/Vue) and plain JS
   // can bind to `el.accent`, `el.autoHide`, `el.noArrows` directly.
@@ -206,11 +258,23 @@ class WaveScroll extends HTMLElement {
   get noArrows() { return this.hasAttribute('no-arrows'); }
   set noArrows(value) { this.toggleAttribute('no-arrows', Boolean(value)); }
 
+  /**
+   * Opt in to section pills. `true` uses the default `h2` selector; a string is
+   * used as a CSS selector; `false`/`null` turns the feature off. Elements
+   * carrying `data-wave-section` are always included on top of the selector.
+   */
+  get sections() { return this.getAttribute('sections'); }
+  set sections(value) {
+    if (value === false || value == null) this.removeAttribute('sections');
+    else this.setAttribute('sections', value === true ? '' : String(value));
+  }
+
   connectedCallback() {
     if (!this.shadowRoot) this.#render();
     this.#applyAccent();
     this.#wire();
     this.#update();
+    this.#collectSections();
   }
 
   disconnectedCallback() {
@@ -218,8 +282,10 @@ class WaveScroll extends HTMLElement {
     REDUCED_MOTION.removeEventListener?.('change', this.#update);
   }
 
-  attributeChangedCallback() {
-    if (this.shadowRoot) this.#applyAccent();
+  attributeChangedCallback(name) {
+    if (!this.shadowRoot) return;
+    if (name === 'accent') this.#applyAccent();
+    else if (name === 'sections') this.#collectSections();
   }
 
   #render() {
@@ -231,6 +297,7 @@ class WaveScroll extends HTMLElement {
       <div class="viewport" part="viewport"><slot></slot></div>
       <div class="bar" part="bar">
         <div class="track" part="track"></div>
+        <div class="pills" part="pills"></div>
         <div class="indicator" part="indicator"></div>
         <div class="grabber" part="grabber">
           ${ARROW('up')}
@@ -242,6 +309,7 @@ class WaveScroll extends HTMLElement {
     this.#bar = root.querySelector('.bar');
     this.#grabber = root.querySelector('.grabber');
     this.#indicator = root.querySelector('.indicator');
+    this.#pills = root.querySelector('.pills');
     this.#slot = root.querySelector('slot');
 
     // Fallback path: drive the grabber from JS when CSS timelines are absent.
@@ -260,6 +328,7 @@ class WaveScroll extends HTMLElement {
     this.#slot.addEventListener('slotchange', () => {
       for (const el of this.#slot.assignedElements()) this.#resizeObserver.observe(el);
       this.#update();
+      this.#collectSections(); // content changed → rediscover sections
     });
 
     // Track the "goal" so arrow steps accumulate, and (in fallback mode) move
@@ -306,6 +375,7 @@ class WaveScroll extends HTMLElement {
     this.style.setProperty('--travel', `${this.#travel}px`);
 
     if (!NATIVE_TIMELINE && !this.#frozen) this.#paintThumb();
+    this.#layoutSections(); // content/size may have shifted section offsets
   };
 
   // Position grabber + indicator from scrollTop (fallback / drag-follow path).
@@ -319,7 +389,96 @@ class WaveScroll extends HTMLElement {
   #onScroll = () => {
     if (!this.#frozen) this.#goal = this.#viewport.scrollTop;
     if (!NATIVE_TIMELINE) this.#paintThumb();
+    this.#updateActiveSection();
   };
+
+  // --- section pills --------------------------------------------------------
+
+  // (Re)build the pill buttons from the slotted content. No-op (and clears any
+  // existing pills) unless the `sections` attribute is present.
+  #collectSections() {
+    if (!this.#pills) return;
+    this.#pills.replaceChildren();
+    this.#sections = [];
+    if (!this.hasAttribute('sections')) return;
+
+    const selector = (this.getAttribute('sections') || '').trim() || 'h2';
+    let matches;
+    try {
+      matches = [...this.querySelectorAll(`${selector}, [data-wave-section]`)];
+    } catch {
+      // Invalid selector → fall back to explicit markers only.
+      matches = [...this.querySelectorAll('[data-wave-section]')];
+    }
+    // Keep only our own content (not a nested <wave-scroll>'s), and dedupe.
+    const els = matches.filter(
+      (el, i, arr) => el.closest('wave-scroll') === this && arr.indexOf(el) === i,
+    );
+
+    for (const el of els) {
+      const label =
+        (el.getAttribute('data-wave-section') || el.textContent || '').trim() || 'Section';
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'pill';
+      pill.setAttribute('part', 'pill');
+      pill.setAttribute('aria-label', `Jump to ${label}`);
+      const tip = document.createElement('span');
+      tip.className = 'tip';
+      tip.textContent = label;
+      pill.append(tip);
+
+      const section = { el, pill, top: 0 };
+      pill.addEventListener('click', () => this.#jumpToSection(section));
+      pill.addEventListener('pointerdown', (e) => e.stopPropagation()); // not a drag
+
+      this.#pills.append(pill);
+      this.#sections.push(section);
+    }
+    this.#layoutSections();
+  }
+
+  // Position each pill along the track at its section's scroll location.
+  #layoutSections() {
+    if (!this.#sections.length) return;
+    const vpTop = this.#viewport.getBoundingClientRect().top;
+    const scrollTop = this.#viewport.scrollTop;
+    for (const s of this.#sections) {
+      s.top = s.el.getBoundingClientRect().top - vpTop + scrollTop;
+    }
+    this.#sections.sort((a, b) => a.top - b.top);
+
+    // A section's precise spot on the track is the grabber's *top edge* when
+    // that section is scrolled to the top — which equals its proportional
+    // position in the document. (frac * travel, not the grabber's center.)
+    const range = this.#scrollable;
+    const travel = this.#travel;
+    for (const s of this.#sections) {
+      const frac = range > 0 ? Math.min(1, Math.max(0, s.top / range)) : 0;
+      s.pill.style.insetBlockStart = `${frac * travel}px`;
+    }
+    this.#updateActiveSection();
+  }
+
+  // Highlight the pill for the section currently in view.
+  #updateActiveSection() {
+    if (!this.#sections.length) return;
+    const y = this.#viewport.scrollTop + this.#viewport.clientHeight * 0.25;
+    let active = 0;
+    for (let i = 0; i < this.#sections.length; i++) {
+      if (this.#sections[i].top <= y) active = i;
+      else break;
+    }
+    this.#sections.forEach((s, i) => s.pill.classList.toggle('active', i === active));
+  }
+
+  #jumpToSection(section) {
+    this.#goal = Math.min(this.#scrollable, Math.max(0, section.top));
+    this.#viewport.scrollTo({
+      top: this.#goal,
+      behavior: REDUCED_MOTION.matches ? 'auto' : 'smooth',
+    });
+  }
 
   // --- drag to scroll -------------------------------------------------------
 

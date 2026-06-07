@@ -7,6 +7,11 @@ export interface WaveScrollProps {
   autoHide?: boolean;
   /** Hide the up/down step buttons. */
   noArrows?: boolean;
+  /**
+   * Section pills. `true` uses the default `h2` selector; a string is used as a
+   * CSS selector. Elements with `data-wave-section` are always included.
+   */
+  sections?: boolean | string;
 }
 
 /** Vue 3 component wrapping the `<wave-scroll>` custom element. */

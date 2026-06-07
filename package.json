@@ -1,6 +1,6 @@
 {
   "name": "wave-scroll",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The Google Wave scrollbar, rebuilt for 2026: a zero-dependency Web Component with native scrolling, a glassy overlay grabber, and CSS scroll-driven motion. React & Vue wrappers included.",
   "type": "module",
   "main": "./wave-scroll.js",

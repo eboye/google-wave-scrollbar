@@ -14,7 +14,7 @@ import { createElement, forwardRef } from 'react';
 import './wave-scroll.js';
 
 export const WaveScroll = forwardRef(function WaveScroll(props, ref) {
-  const { accent, autoHide, noArrows, children, ...rest } = props;
+  const { accent, autoHide, noArrows, sections, children, ...rest } = props;
   return createElement(
     'wave-scroll',
     {
@@ -23,6 +23,8 @@ export const WaveScroll = forwardRef(function WaveScroll(props, ref) {
       // Presence attributes: empty string = present, undefined = absent.
       'auto-hide': autoHide ? '' : undefined,
       'no-arrows': noArrows ? '' : undefined,
+      // `sections`: true → default selector (''), string → custom selector.
+      sections: sections === true ? '' : sections || undefined,
       ...rest,
     },
     children,

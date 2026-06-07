@@ -104,6 +104,33 @@ That's the whole API.
 | `accent` | Theme color for the grabber & indicator. Also settable via the `--wave-accent` CSS custom property. |
 | `auto-hide` | Only reveal the bar on hover / interaction. |
 | `no-arrows` | Hide the up/down step buttons for a cleaner, minimal bar. |
+| `sections` | Show jump-to **section pills** along the track. Boolean (default `h2`) or a CSS selector — see below. |
+
+### Section pills
+
+Opt in with `sections` to scatter clickable **pills** along the track — one per
+section, positioned exactly where the grabber lands for that section:
+
+```html
+<!-- default: one pill per <h2> -->
+<wave-scroll sections>…</wave-scroll>
+
+<!-- or a custom selector -->
+<wave-scroll sections="h2, h3">…</wave-scroll>
+```
+
+- **Click a pill** to smooth-scroll to that section.
+- **Hover** a pill to see its label (the element's text) in a tooltip.
+- The pill for the section **currently in view** highlights as you scroll.
+- Elements marked `data-wave-section="Label"` are **always** included (on top of
+  the selector), with the attribute value as the label:
+
+  ```html
+  <section data-wave-section="Pricing">…</section>
+  ```
+
+Style the pills via `::part(pill)`. Leave `sections` off and nothing changes —
+it's purely additive.
 
 ### Theming
 
@@ -145,7 +172,7 @@ export function App() {
 }
 ```
 
-Props: `accent`, `autoHide`, `noArrows`, plus `className` / `style` / `ref`.
+Props: `accent`, `autoHide`, `noArrows`, `sections`, plus `className` / `style` / `ref`.
 
 > Since it's a real custom element, you can also skip the wrapper and write
 > `<wave-scroll>` directly after `import 'wave-scroll'` — React 19 passes
