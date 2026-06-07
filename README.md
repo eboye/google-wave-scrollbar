@@ -65,11 +65,11 @@ no jQuery, no jQuery UI, no sprite PNGs.
 **Or via npm** (ships with TypeScript types and React / Vue wrappers):
 
 ```sh
-npm install @eboye/wave-scroll
+npm install wave-scroll
 ```
 
 ```js
-import '@eboye/wave-scroll';        // registers the <wave-scroll> element
+import 'wave-scroll';        // registers the <wave-scroll> element
 ```
 
 ---
@@ -134,7 +134,7 @@ A thin, typed wrapper forwards a ref to the element and maps camelCase props to
 attributes:
 
 ```jsx
-import { WaveScroll } from '@eboye/wave-scroll/react';
+import { WaveScroll } from 'wave-scroll/react';
 
 export function App() {
   return (
@@ -148,14 +148,14 @@ export function App() {
 Props: `accent`, `autoHide`, `noArrows`, plus `className` / `style` / `ref`.
 
 > Since it's a real custom element, you can also skip the wrapper and write
-> `<wave-scroll>` directly after `import '@eboye/wave-scroll'` — React 19 passes
+> `<wave-scroll>` directly after `import 'wave-scroll'` — React 19 passes
 > props through cleanly.
 
 ## ✦ Vue
 
 ```vue
 <script setup>
-import { WaveScroll } from '@eboye/wave-scroll/vue';
+import { WaveScroll } from 'wave-scroll/vue';
 </script>
 
 <template>
@@ -165,7 +165,7 @@ import { WaveScroll } from '@eboye/wave-scroll/vue';
 </template>
 ```
 
-> Prefer the raw tag in a template? Import `'@eboye/wave-scroll'` and tell Vue
+> Prefer the raw tag in a template? Import `'wave-scroll'` and tell Vue
 > it's a custom element so it doesn't try to resolve it as a component:
 >
 > ```js
