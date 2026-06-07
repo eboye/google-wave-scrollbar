@@ -146,6 +146,25 @@
         border: 1px solid var(--line);
       }
       .feature b { color: var(--accent-2); }
+
+      /* Inline live example: a self-contained nested scroll box. */
+      .example {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: clip;
+        background: color-mix(in srgb, var(--ink) 5%, transparent);
+      }
+      .example > header {
+        display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;
+        padding: 0.8rem 1.1rem;
+        border-block-end: 1px solid var(--line);
+        font-size: 0.82rem; letter-spacing: 0.02em;
+      }
+      .example > header code { color: var(--accent-2); }
+      .example > header em { color: var(--muted); font-style: normal; }
+      .example .mini { block-size: 200px; --wave-accent: var(--accent-2); }
+      .example .mini > div { padding: 1rem 1.2rem; display: grid; gap: 0.7rem; }
+      .example .mini p { color: var(--muted); font-size: 0.95rem; margin: 0; }
     }
   </style>
 </head>
@@ -212,6 +231,29 @@
             interaction, and <code>no-arrows</code> drops the step buttons for a
             cleaner minimal bar.
           </p>
+
+          <div class="example">
+            <header><code>auto-hide</code> <em>— hover the box; the teal bar fades in</em></header>
+            <wave-scroll auto-hide class="mini">
+              <div>
+                <p>This nested box uses <code>&lt;wave-scroll auto-hide&gt;</code>. At
+                rest the scrollbar is invisible, keeping the content perfectly
+                clean.</p>
+                <p>Move your pointer over the box and the bar fades in; move away
+                and it fades back out. Everything else — drag, arrows, the delayed
+                dragger — works exactly the same.</p>
+                <p>It's the same component, just a different attribute. Scroll me
+                to feel it.</p>
+                <p>Pellentesque habitant morbi tristique senectus et netus et
+                malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat
+                vitae, ultricies eget.</p>
+                <p>Donec eu libero sit amet quam egestas semper. Aenean ultricies
+                mi vitae est. Mauris placerat eleifend leo.</p>
+                <p>Quisque sit amet est et sapien ullamcorper pharetra. Vestibulum
+                erat wisi, condimentum sed, commodo vitae, ornare sit amet, wisi.</p>
+              </div>
+            </wave-scroll>
+          </div>
 
           <hr />
           <h2>Why it mattered</h2>
