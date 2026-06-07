@@ -66,5 +66,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   TypeScript type definitions.
 
 [Unreleased]: https://github.com/eboye/google-wave-scrollbar/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/eboye/google-wave-scrollbar/releases/tag/v1.1.0
-[1.0.0]: https://www.npmjs.com/package/wave-scroll/v/1.0.0
+[1.1.0]: https://github.com/eboye/google-wave-scrollbar/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/eboye/google-wave-scrollbar/releases/tag/v1.0.0
