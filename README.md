@@ -261,6 +261,10 @@ tarball is ~13 kB and includes the wrappers and TypeScript types.
 
 ---
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ## License
 
 [MIT](#license).
